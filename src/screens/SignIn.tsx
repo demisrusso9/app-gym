@@ -19,7 +19,7 @@ export function SignIn() {
       showsVerticalScrollIndicator={false}
       w={'full'}
     >
-      <VStack flex={1} bg='gray.700' px={8}>
+      <VStack flex={1} px={8}>
         <Image
           source={BackgroundImg}
           defaultSource={BackgroundImg}
