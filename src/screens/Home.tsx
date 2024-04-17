@@ -3,8 +3,12 @@ import { FlatList, HStack, Heading, VStack, Text } from 'native-base'
 import { Group } from '@/components/Group'
 import { HomeHeader } from '@/components/HomeHeader'
 import { ExerciseCard } from '@/components/ExerciseCard'
+import { useNavigation } from '@react-navigation/native'
+import { AppNavigationRoutesProps } from '@/routes/app.routes'
 
 export function Home() {
+  const { navigate } = useNavigation<AppNavigationRoutesProps>()
+
   const [groups, setGroups] = useState([
     'costa',
     'ombro',
@@ -43,6 +47,10 @@ export function Home() {
 
   const [groupSelected, setGroupSelected] = useState('costa')
 
+  function handleOpenExerciseDetails() {
+    navigate('exercise')
+  }
+
   return (
     <VStack flex={1}>
       <HomeHeader />
@@ -53,7 +61,9 @@ export function Home() {
         renderItem={({ item }) => (
           <Group
             name={item}
-            isActive={groupSelected.toLocaleUpperCase() === item.toLocaleUpperCase()}
+            isActive={
+              groupSelected.toLocaleUpperCase() === item.toLocaleUpperCase()
+            }
             onPress={() => setGroupSelected(item)}
           />
         )}
@@ -62,6 +72,7 @@ export function Home() {
         _contentContainerStyle={{ px: 8 }}
         my={10}
         maxH={10}
+        minH={10}
       />
 
       <VStack flex={1} px={8}>
@@ -82,7 +93,7 @@ export function Home() {
             <ExerciseCard
               name={item.name}
               text={item.text}
-              onPress={() => {}}
+              onPress={() => handleOpenExerciseDetails()}
             />
           )}
           showsVerticalScrollIndicator={false}

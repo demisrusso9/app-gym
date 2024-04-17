@@ -23,7 +23,7 @@ export function ExerciseCard({ name, text, ...rest }: ExerciseCardProps) {
             uri: 'https://fastly.picsum.photos/id/244/600/600.jpg?hmac=OeAzRT1ePNH0wsvaO680ILDE0pSs4gc0l9phxsXicnc'
           }}
           alt='Exercise'
-          resizeMode='center'
+          resizeMode='cover'
           width={16}
           height={16}
           rounded={'md'}
