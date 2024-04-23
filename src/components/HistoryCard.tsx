@@ -14,6 +14,7 @@ export function HistoryCard() {
     >
       <VStack>
         <Heading
+          fontFamily={'heading'}
           color={'white'}
           fontSize={'md'}
           textTransform={'capitalize'}

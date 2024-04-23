@@ -13,7 +13,7 @@ export function ScreenHeader({ title }: ScreenHeaderProps) {
       justifyContent={'center'}
       alignItems={'center'}
     >
-      <Heading color={'gray.100'} fontSize={'xl'}>
+      <Heading color={'gray.100'} fontSize={'xl'} fontFamily={'heading'}>
         {title}
       </Heading>
     </Center>
