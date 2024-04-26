@@ -6,7 +6,8 @@ import {
   Center,
   Heading,
   ScrollView,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  useToast
 } from 'native-base'
 import { Input } from '@/components/Input'
 import { Button } from '@/components/Button'
@@ -15,6 +16,8 @@ import BackgroundImg from '@/assets/background.png'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import z from 'zod'
+import { api } from '@/services/api'
+import { AppError } from '@/utils/AppError'
 
 interface SignUpFormProps {
   name: string
@@ -40,8 +43,6 @@ export function SignUp() {
       path: ['confirm_password']
     })
 
-  const navigation = useNavigation()
-
   const {
     control,
     handleSubmit,
@@ -49,13 +50,29 @@ export function SignUp() {
   } = useForm<SignUpFormProps>({
     resolver: zodResolver(schema)
   })
+  const navigation = useNavigation()
+
+  const toast = useToast()
 
   function handleGoBack() {
     navigation.goBack()
   }
 
-  function handleSignUp(data: SignUpFormProps) {
-    console.log(JSON.stringify({ data }, null, 2))
+  async function handleSignUp({ name, email, password }: SignUpFormProps) {
+    try {
+      const { data } = await api.post('/users', { name, email, password })
+    } catch (error) {
+      const isAppError = error instanceof AppError
+      const title = isAppError
+        ? error.message
+        : 'Não foi possível criar a conta, tente mais tarde.'
+
+      toast.show({
+        title,
+        placement: 'top',
+        bgColor: 'red.500'
+      })
+    }
   }
 
   return (
