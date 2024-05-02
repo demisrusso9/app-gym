@@ -6,7 +6,8 @@ import {
   Center,
   Heading,
   ScrollView,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  useToast
 } from 'native-base'
 import { useForm, Controller } from 'react-hook-form'
 import { Input } from '@/components/Input'
@@ -16,6 +17,9 @@ import LogoSvg from '@/assets/logo.svg'
 import { AuthNavigationRoutesProps } from '@/routes/auth.routes'
 import { zodResolver } from '@hookform/resolvers/zod'
 import z from 'zod'
+import { useAuth } from '@/hooks/useAuth'
+import { AppError } from '@/utils/AppError'
+import { useState } from 'react'
 
 interface SignInFormProps {
   email: string
@@ -23,6 +27,11 @@ interface SignInFormProps {
 }
 
 export function SignIn() {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const toast = useToast()
+
+  const { signIn } = useAuth()
   const { navigate } = useNavigation<AuthNavigationRoutesProps>()
 
   const schema = z.object({
@@ -44,8 +53,25 @@ export function SignIn() {
     navigate('signup')
   }
 
-  function handleLogin(data: SignInFormProps) {
-    console.log(JSON.stringify({ data }, null, 2))
+  async function handleLogin({ email, password }: SignInFormProps) {
+    try {
+      setIsLoading(true)
+      await signIn(email, password)
+    } catch (error) {
+      const isAppError = error instanceof AppError
+
+      const title = isAppError
+        ? error.message
+        : 'Não foi possível entrar. Tente novamente mais tarde.'
+
+      setIsLoading(false)
+
+      toast.show({
+        title,
+        placement: 'top',
+        bgColor: 'red.500'
+      })
+    }
   }
 
   return (
@@ -111,7 +137,11 @@ export function SignIn() {
               )}
             />
 
-            <Button text='Acessar' onPress={handleSubmit(handleLogin)} />
+            <Button
+              text='Acessar'
+              onPress={handleSubmit(handleLogin)}
+              isLoading={isLoading}
+            />
           </Center>
 
           <Center mt={24}>

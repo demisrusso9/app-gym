@@ -18,6 +18,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import z from 'zod'
 import { api } from '@/services/api'
 import { AppError } from '@/utils/AppError'
+import { useAuth } from '@/hooks/useAuth'
+import { useState } from 'react'
 
 interface SignUpFormProps {
   name: string
@@ -27,6 +29,9 @@ interface SignUpFormProps {
 }
 
 export function SignUp() {
+  const [isLoading, setIsLoading] = useState(false)
+  const { createAccount } = useAuth()
+
   const schema = z
     .object({
       name: z.string({ message: 'Informe o nome.' }),
@@ -60,12 +65,17 @@ export function SignUp() {
 
   async function handleSignUp({ name, email, password }: SignUpFormProps) {
     try {
-      const { data } = await api.post('/users', { name, email, password })
+      setIsLoading(true)
+
+      await createAccount(name, email, password)
     } catch (error) {
       const isAppError = error instanceof AppError
+
       const title = isAppError
         ? error.message
         : 'Não foi possível criar a conta, tente mais tarde.'
+
+      setIsLoading(false)
 
       toast.show({
         title,
@@ -169,6 +179,7 @@ export function SignUp() {
             <Button
               text='Criar e acessar'
               onPress={handleSubmit(handleSignUp)}
+              isLoading={isLoading}
             />
           </Center>
 

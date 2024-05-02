@@ -8,6 +8,7 @@ import { NativeBaseProvider } from 'native-base'
 import { Loading } from '@/components/Loading'
 import { theme } from '@/theme'
 import { Routes } from '@/routes'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 export default function App() {
   const [fonts] = useFonts({
@@ -23,7 +24,7 @@ export default function App() {
         translucent
       />
 
-      {fonts ? <Routes /> : <Loading />}
+      <AuthProvider>{fonts ? <Routes /> : <Loading />}</AuthProvider>
     </NativeBaseProvider>
   )
 }
