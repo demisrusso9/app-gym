@@ -5,6 +5,11 @@ import {
   storageGetUser,
   storageRemoveUser
 } from '@/storage/user'
+import {
+  storageGetAuthToken,
+  storageRemoveAuthToken,
+  storageSaveAuthToken
+} from '@/storage/userAuth'
 import { ReactNode, createContext, useEffect, useState } from 'react'
 
 interface AuthProviderProps {
@@ -29,26 +34,49 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<UserDTO>({} as UserDTO)
   const [isLoadingUserStorage, setIsLoadingUserStorage] = useState(true)
 
+  // Save the user's data in the state and updates the token
+  function userAndTokenUpdate(userData: UserDTO, token: string) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    setUser(userData)
+  }
+
+  // Store the user's data and authentication token on their device
+  async function storageUserAndTokenSave(userData: UserDTO, token: string) {
+    try {
+      setIsLoadingUserStorage(true)
+
+      await storageSaveUser(userData)
+      await storageSaveAuthToken(token)
+    } catch (error) {
+      throw error
+    } finally {
+      setIsLoadingUserStorage(false)
+    }
+  }
+
   async function createAccount(name: string, email: string, password: string) {
     try {
       await api.post('/users', { name, email, password })
       await signIn(email, password)
     } catch (error) {
-      console.log(JSON.stringify({ error }, null, 2));
       throw error
     }
   }
 
   async function signIn(email: string, password: string) {
     try {
+      setIsLoadingUserStorage(true)
+
       const { data } = await api.post('/sessions', { email, password })
 
-      if (data.user) {
-        setUser(data.user)
-        storageSaveUser(data.user)
+      if (data.user && data.token) {
+        await storageUserAndTokenSave(data.user, data.token)
+        userAndTokenUpdate(data.user, data.token)
       }
     } catch (error) {
       throw error
+    } finally {
+      setIsLoadingUserStorage(false)
     }
   }
 
@@ -56,9 +84,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoadingUserStorage(true)
 
+      api.defaults.headers.common['Authorization'] = ''
       setUser({} as UserDTO)
 
       await storageRemoveUser()
+      await storageRemoveAuthToken()
     } catch (error) {
       throw error
     } finally {
@@ -69,9 +99,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   async function isUserLogged() {
     try {
       const user = await storageGetUser()
+      const token = await storageGetAuthToken()
 
-      if (user) {
-        setUser(user)
+      if (user && token) {
+        userAndTokenUpdate(user, token)
       }
     } catch (error) {
       throw error
