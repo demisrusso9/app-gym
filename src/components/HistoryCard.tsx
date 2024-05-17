@@ -1,6 +1,12 @@
 import { HStack, Heading, VStack, Text } from 'native-base'
 
-export function HistoryCard() {
+interface HistoryCardProps {
+  name: string
+  exercise: string
+  duration: string
+}
+
+export function HistoryCard({ name, exercise, duration }: HistoryCardProps) {
   return (
     <HStack
       bg={'gray.600'}
@@ -20,16 +26,16 @@ export function HistoryCard() {
           textTransform={'capitalize'}
           flexShrink={1}
         >
-          Costas
+          {exercise}
         </Heading>
 
         <Text color={'gray.100'} fontSize={'lg'} numberOfLines={1}>
-          Puxada Frontal
+          {name}
         </Text>
       </VStack>
 
       <Text color={'gray.300'} fontSize={'md'}>
-        21:56
+        {duration}
       </Text>
     </HStack>
   )

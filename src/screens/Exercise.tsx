@@ -1,4 +1,13 @@
-import { HStack, Heading, Icon, Text, VStack, Image, Box } from 'native-base'
+import {
+  HStack,
+  Heading,
+  Icon,
+  Text,
+  VStack,
+  Image,
+  Box,
+  useToast
+} from 'native-base'
 import { ScrollView, TouchableOpacity } from 'react-native'
 import { Feather } from '@expo/vector-icons'
 import { useNavigation, useRoute } from '@react-navigation/native'
@@ -8,18 +17,52 @@ import RepetitionsSvg from '@/assets/repetitions.svg'
 import { Button } from '@/components/Button'
 import { ExerciseDTO } from '@/dtos/ExerciseDTO'
 import { api } from '@/services/api'
+import { useState } from 'react'
+import { AppError } from '@/utils/AppError'
 
 interface RouteParams {
   exercise: ExerciseDTO
 }
 
 export function Exercise() {
+  const [loading, setLoading] = useState(false)
+
+  const toast = useToast()
   const route = useRoute()
+
   const { exercise } = route.params as RouteParams
   const { goBack } = useNavigation()
 
   function handleGoBack() {
     goBack()
+  }
+
+  async function createExerciseHistory() {
+    try {
+      setLoading(true)
+
+      await api.post('/history', { exercise_id: exercise.id })
+
+      toast.show({
+        title: 'Exercício registrado com sucesso!',
+        placement: 'top',
+        bgColor: 'green.700'
+      })
+    } catch (error) {
+      const isAppError = error instanceof AppError
+
+      const title = isAppError
+        ? error.message
+        : 'Não foi possível criar o histórico para este exercício.'
+
+      toast.show({
+        title,
+        placement: 'top',
+        bgColor: 'red.500'
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -94,7 +137,11 @@ export function Exercise() {
               </HStack>
             </HStack>
 
-            <Button text='Marcar como realizado' />
+            <Button
+              text='Marcar como realizado'
+              onPress={createExerciseHistory}
+              isLoading={loading}
+            />
           </Box>
         </VStack>
       </ScrollView>
