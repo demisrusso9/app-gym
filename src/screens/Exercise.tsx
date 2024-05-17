@@ -1,13 +1,21 @@
 import { HStack, Heading, Icon, Text, VStack, Image, Box } from 'native-base'
 import { ScrollView, TouchableOpacity } from 'react-native'
 import { Feather } from '@expo/vector-icons'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 import BodySvg from '@/assets/body.svg'
 import SeriesSvg from '@/assets/series.svg'
 import RepetitionsSvg from '@/assets/repetitions.svg'
 import { Button } from '@/components/Button'
+import { ExerciseDTO } from '@/dtos/ExerciseDTO'
+import { api } from '@/services/api'
+
+interface RouteParams {
+  exercise: ExerciseDTO
+}
 
 export function Exercise() {
+  const route = useRoute()
+  const { exercise } = route.params as RouteParams
   const { goBack } = useNavigation()
 
   function handleGoBack() {
@@ -27,8 +35,13 @@ export function Exercise() {
           mt={4}
           mb={8}
         >
-          <Heading color={'gray.100'} fontSize={'lg'} flexShrink={1} fontFamily={'heading'}>
-            Puxada frontal
+          <Heading
+            color={'gray.100'}
+            fontSize={'lg'}
+            flexShrink={1}
+            fontFamily={'heading'}
+          >
+            {exercise.name}
           </Heading>
 
           <HStack alignItems={'center'}>
@@ -39,7 +52,7 @@ export function Exercise() {
               ml={1}
               textTransform={'capitalize'}
             >
-              costas
+              {exercise.group}
             </Text>
           </HStack>
         </HStack>
@@ -49,7 +62,7 @@ export function Exercise() {
         <VStack p={8}>
           <Image
             source={{
-              uri: 'https://fastly.picsum.photos/id/244/600/600.jpg?hmac=OeAzRT1ePNH0wsvaO680ILDE0pSs4gc0l9phxsXicnc'
+              uri: `${api.defaults.baseURL}/exercise/demo/${exercise.demo}`
             }}
             alt='Exercise'
             resizeMode='cover'
@@ -69,14 +82,14 @@ export function Exercise() {
               <HStack>
                 <SeriesSvg />
                 <Text color={'gray.200'} ml={2}>
-                  3 séries
+                  {exercise.series} séries
                 </Text>
               </HStack>
 
               <HStack>
                 <RepetitionsSvg />
                 <Text color={'gray.200'} ml={2}>
-                  12 repetições
+                  {exercise.repetitions} repetições
                 </Text>
               </HStack>
             </HStack>

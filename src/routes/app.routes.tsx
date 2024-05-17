@@ -12,12 +12,15 @@ import HistorySvg from '@/assets/history.svg'
 import ProfileSvg from '@/assets/profile.svg'
 import { useTheme } from 'native-base'
 import { Platform } from 'react-native'
+import { ExerciseDTO } from '@/dtos/ExerciseDTO'
 
 type AppRoutes = {
   home: undefined
   history: undefined
   profile: undefined
-  exercise: undefined
+  exercise: {
+    exercise: ExerciseDTO
+  }
 }
 
 export type AppNavigationRoutesProps = BottomTabNavigationProp<AppRoutes>
