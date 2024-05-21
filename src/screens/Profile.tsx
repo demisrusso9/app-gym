@@ -20,28 +20,65 @@ import * as FileSystem from 'expo-file-system'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import z from 'zod'
+import { useAuth } from '@/hooks/useAuth'
+import { AppError } from '@/utils/AppError'
+import { api } from '@/services/api'
 
 const PHOTO_SIZE = 33
 
 interface ProfileProps {
   name: string
+  email: string
   old_password: string
   password: string
   confirm_password: string
 }
 
 export function Profile() {
-  const [userPhoto, setUserPhoto] = useState(
-    'https://github.com/demisrusso9.png'
-  )
-  const [photoIsloading, setPhotoIsloading] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [userPhoto, setUserPhoto] = useState<string>()
 
+  const { user, updateUserProfile } = useAuth()
   const toast = useToast()
 
-  async function handleUserPhotoSelect() {
-    setPhotoIsloading(true)
+  const schema = z
+    .object({
+      name: z.string({ message: 'Informe o nome.' }),
+      old_password: z
+        .string({ message: 'Informe sua senha antiga.' })
+        .optional(),
+      password: z
+        .string()
+        .min(6, 'A senha deve ter pelo menos 6 dígitos.')
+        .nullable()
+        .optional()
+        .or(z.literal('')),
+      confirm_password: z.string().nullable().optional().or(z.literal(''))
+    })
+    .refine(data => data.password === data.confirm_password, {
+      message: 'As senhas não coincidem',
+      path: ['confirm_password']
+    })
 
+  const {
+    control,
+    handleSubmit,
+    formState: { errors }
+  } = useForm<ProfileProps>({
+    defaultValues: {
+      name: user.name,
+      email: user.email,
+      old_password: '',
+      password: '',
+      confirm_password: ''
+    },
+    resolver: zodResolver(schema)
+  })
+
+  async function handleUserPhotoSelect() {
     try {
+      setLoading(true)
+
       const { assets, canceled } = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 1,
@@ -66,35 +103,42 @@ export function Profile() {
     } catch (error) {
       console.log({ error })
     } finally {
-      setPhotoIsloading(false)
+      setLoading(false)
     }
   }
 
-  async function handleUpdate(data: ProfileProps) {
-    console.log(JSON.stringify({ data }, null, 2))
+  async function handleProfileUpdate(data: ProfileProps) {
+    try {
+      setLoading(true)
+
+      const userUpdated = user
+      userUpdated.name = data.name
+
+      await api.put('/users', data)
+
+      await updateUserProfile(userUpdated)
+
+      toast.show({
+        title: 'Perfil atualizado com sucesso!',
+        placement: 'top',
+        bgColor: 'green.700'
+      })
+    } catch (error) {
+      const isAppError = error instanceof AppError
+
+      const title = isAppError
+        ? error.message
+        : 'Não foi possível atualizar o perfil'
+
+      toast.show({
+        title,
+        placement: 'top',
+        bgColor: 'red.500'
+      })
+    } finally {
+      setLoading(false)
+    }
   }
-
-  const schema = z
-    .object({
-      name: z.string().optional(),
-      old_password: z.string({ message: 'Informe sua senha antiga.' }),
-      password: z
-        .string({ message: 'Informe a senha.' })
-        .min(6, 'Senha muito curta.'),
-      confirm_password: z.string({ message: 'Confirme a senha.' })
-    })
-    .refine(data => data.password === data.confirm_password, {
-      message: 'As senhas não coincidem',
-      path: ['confirm_password']
-    })
-
-  const {
-    control,
-    handleSubmit,
-    formState: { errors }
-  } = useForm<ProfileProps>({
-    resolver: zodResolver(schema)
-  })
 
   return (
     <VStack flex={1}>
@@ -108,7 +152,7 @@ export function Profile() {
           bounces={false}
         >
           <Center mt={6} px={10}>
-            {photoIsloading ? (
+            {loading ? (
               <Skeleton
                 h={PHOTO_SIZE}
                 w={PHOTO_SIZE}
@@ -150,7 +194,19 @@ export function Profile() {
               )}
             />
 
-            <Input bg={'gray.600'} placeholder='E-mail' isDisabled />
+            <Controller
+              name='email'
+              control={control}
+              render={({ field: { value } }) => (
+                <Input
+                  bg={'gray.600'}
+                  placeholder='E-mail'
+                  value={value}
+                  isDisabled={true}
+                />
+              )}
+              disabled={true}
+            />
 
             <Heading
               color={'gray.200'}
@@ -166,12 +222,11 @@ export function Profile() {
             <Controller
               name='old_password'
               control={control}
-              render={({ field: { onChange, value } }) => (
+              render={({ field: { onChange } }) => (
                 <Input
                   bg={'gray.600'}
                   secureTextEntry
                   placeholder='Senha antiga'
-                  value={value}
                   onChangeText={onChange}
                   errorMessage={errors.old_password?.message}
                 />
@@ -181,12 +236,11 @@ export function Profile() {
             <Controller
               name='password'
               control={control}
-              render={({ field: { onChange, value } }) => (
+              render={({ field: { onChange } }) => (
                 <Input
                   bg={'gray.600'}
                   secureTextEntry
                   placeholder='Nova senha'
-                  value={value}
                   onChangeText={onChange}
                   errorMessage={errors.password?.message}
                 />
@@ -196,12 +250,11 @@ export function Profile() {
             <Controller
               name='confirm_password'
               control={control}
-              render={({ field: { onChange, value } }) => (
+              render={({ field: { onChange } }) => (
                 <Input
                   bg={'gray.600'}
                   secureTextEntry
                   placeholder='Confirme a nova senha'
-                  value={value}
                   onChangeText={onChange}
                   errorMessage={errors.confirm_password?.message}
                 />
@@ -211,7 +264,8 @@ export function Profile() {
             <Button
               text='Atualizar'
               mt={4}
-              onPress={handleSubmit(handleUpdate)}
+              onPress={handleSubmit(handleProfileUpdate)}
+              isLoading={loading}
             />
           </Center>
         </ScrollView>
