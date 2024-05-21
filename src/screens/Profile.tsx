@@ -23,6 +23,7 @@ import z from 'zod'
 import { useAuth } from '@/hooks/useAuth'
 import { AppError } from '@/utils/AppError'
 import { api } from '@/services/api'
+import defaultUserPhoto from '@/assets/userPhotoDefault.png'
 
 const PHOTO_SIZE = 33
 
@@ -36,7 +37,6 @@ interface ProfileProps {
 
 export function Profile() {
   const [loading, setLoading] = useState(false)
-  const [userPhoto, setUserPhoto] = useState<string>()
 
   const { user, updateUserProfile } = useAuth()
   const toast = useToast()
@@ -99,7 +99,37 @@ export function Profile() {
           })
       }
 
-      setUserPhoto(assets[0].uri)
+      const fileExtension = assets[0].uri.split('.').pop()
+
+      const photoFile = {
+        name: `${user.name}.${fileExtension}`.toLowerCase(),
+        uri: assets[0].uri,
+        type: `${assets[0].type}/${fileExtension}`
+      } as any
+
+      const userPhotoUploadForm = new FormData()
+      userPhotoUploadForm.append('avatar', photoFile)
+
+      const userPhotoUpdated = await api.patch(
+        '/users/avatar',
+        userPhotoUploadForm,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      )
+
+      const userUpdated = user
+      userUpdated.avatar = userPhotoUpdated.data.avatar
+
+      await updateUserProfile(userUpdated)
+
+      toast.show({
+        title: 'Foto atualizada!',
+        placement: 'top',
+        bgColor: 'green.700'
+      })
     } catch (error) {
       console.log({ error })
     } finally {
@@ -163,7 +193,11 @@ export function Profile() {
             ) : (
               <UserPhoto
                 size={PHOTO_SIZE}
-                source={{ uri: userPhoto }}
+                source={
+                  user.avatar
+                    ? { uri: `${api.defaults.baseURL}/avatar/${user.avatar}` }
+                    : defaultUserPhoto
+                }
                 alt='Foto do usuário'
               />
             )}
