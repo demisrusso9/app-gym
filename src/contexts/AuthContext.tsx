@@ -42,12 +42,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   // Store the user's data and authentication token on their device
-  async function storageUserAndTokenSave(userData: UserDTO, token: string) {
+  async function storageUserAndTokenSave(
+    userData: UserDTO,
+    token: string,
+    refresh_token: string
+  ) {
     try {
       setIsLoadingUserStorage(true)
 
       await storageSaveUser(userData)
-      await storageSaveAuthToken(token)
+      await storageSaveAuthToken({ token, refresh_token })
     } catch (error) {
       throw error
     } finally {
@@ -71,7 +75,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { data } = await api.post('/sessions', { email, password })
 
       if (data.user && data.token) {
-        await storageUserAndTokenSave(data.user, data.token)
+        await storageUserAndTokenSave(data.user, data.token, data.refresh_token)
         userAndTokenUpdate(data.user, data.token)
       }
     } catch (error) {
@@ -100,7 +104,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   async function isUserLogged() {
     try {
       const user = await storageGetUser()
-      const token = await storageGetAuthToken()
+      const { token } = await storageGetAuthToken()
 
       if (user && token) {
         userAndTokenUpdate(user, token)
@@ -124,6 +128,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     isUserLogged()
   }, [])
+
+  useEffect(() => {
+    const subscribe = api.registerInterceptTokenManager(signOut);
+
+    return () => {
+      subscribe();
+    }
+  },[])
 
   return (
     <AuthContext.Provider
